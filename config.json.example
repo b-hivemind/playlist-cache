@@ -1,0 +1,21 @@
+{
+    "global_settings": {
+        "repeat_rewind_playlist_id": null
+    },
+    "caches": {
+        "sample_parent_id": {
+            "parent_name": "",
+            "cache_id": "",
+            "cache_minimum_size": 0,
+            "interval": 3600,
+            "active": true
+        },
+        "sample_parent_id_2": {
+            "parent_name": "",
+            "cache_id": "",
+            "cache_minimum_size": 0,
+            "interval": 3600,
+            "active": true
+        }
+    }
+}
