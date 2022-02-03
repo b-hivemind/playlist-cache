@@ -31,7 +31,7 @@ class TestPlaylistCache(unittest.TestCase):
                         print(f"[ERROR] [Teardown] Encountered the following error when deleting playlist {playlist}: {e}")
         # Roll test config
         os.remove(self.test_config)
-        shutil.copyfile("config.json.bak", self.test_config)
+        shutil.copyfile("config.json.example", self.test_config)
         return super().tearDown()
 
     def test_create_cache_playlist(self):
