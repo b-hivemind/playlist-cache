@@ -40,51 +40,68 @@ class PlaylistCache:
         self.cache_id = config.get("cache_id")
         self.long = config.get("long_term_top_tracks", False)
         self.minlen = config.get("cache_minimum_size", 0)
-        self.interval = config.get("interval", 60*60*1)
+        self.interval = config.get("interval", 3600)
         self.active = config.get("active", False)
     
 
     def monitor(self):
-        # First, ping to check if the cache has been deleted
-        cache_playlist = self.client.playlist(self.cache_id)
+        log.info("Begin monitor")
+        # Re-authorize on every run
+        try:
+            if not self.client:
+                self.client = login(" ".join([ALL_PLAYLIST_MODIFY_SCOPES, ALL_PLAYLIST_READ_SCOPES, RECENTLY_PLAYED_SCOPE, TOP_READ_SCOPE]))
+            if not self.client:
+                log.error("Authorization Error")
+                sys.exit(-1)
         
-        user_playlists = [playlist['id'] for playlist in get_user_playlists(self.client)]
+            # First, ping to check if the cache has been deleted
+            cache_playlist = self.client.playlist(self.cache_id)
+            
+            user_playlists = [playlist['id'] for playlist in get_user_playlists(self.client)]
     
-        if not cache_playlist or not self.cache_id in user_playlists:
-            # Playlist has been deleted, create a new one
-            self.cache_id = create_cache_playlist(self.client, self.parent_id)
-            self.read_config()
+            if not cache_playlist or not self.cache_id in user_playlists:
+                # Playlist has been deleted, create a new one
+                self.cache_id = create_cache_playlist(self.client, self.parent_id)
+                self.read_config()
             
         
-        log.info("Fetching parent track ids")
-        parent_track_ids = set(get_playlist_track_ids(self.client, self.parent_id))
-        log.info("Fetching cache track ids")
-        cache_track_ids = set(get_playlist_track_ids(self.client, self.cache_id))
+            log.info("Fetching parent track ids")
+            parent_track_ids = set(get_playlist_track_ids(self.client, self.parent_id))
+            log.info("Fetching cache track ids")
+            cache_track_ids = set(get_playlist_track_ids(self.client, self.cache_id))
 
-        most_played_track_ids = fetch_user_common_tracks(self.client, self.parent_id, self.config_file)
-        common_tracks = parent_track_ids.intersection(most_played_track_ids)
-        new_tracks = common_tracks - cache_track_ids
-        log.info("Unique tracks {}".format(new_tracks))
+            most_played_track_ids = fetch_user_common_tracks(self.client, self.parent_id, self.config_file)
+            common_tracks = parent_track_ids.intersection(most_played_track_ids)
+            new_tracks = common_tracks - cache_track_ids
+            log.info("Unique tracks {}".format(new_tracks))
         
-        # If no common tracks are found, maintain the same state (don't delete tracks)
-        if common_tracks != set():
-            try:
-                log.info(f"Adding tracks {[self.client.track(x)['name'] for x in new_tracks]}")
-                if len(new_tracks) > 0:
-                    self.client.playlist_add_items(self.cache_id, new_tracks)   
-                # Delete tracks no longer commonly played if more tracks than required
-                extras = cache_track_ids - common_tracks
-                tracks_to_remove = []
-                if len(cache_track_ids) > self.minlen and len(extras) > 0:    
-                    while len(cache_track_ids - extras) > self.minlen:
-                        tracks_to_remove.append(extras.pop())
-                log.info(f"Removing tracks {[self.client.track(i)['name'] for i in tracks_to_remove]}")
-                self.client.playlist_remove_all_occurrences_of_items(self.cache_id, tracks_to_remove)
-            except SpotifyException as e:    
-                log.error(f"{e}")
-        else:
-            log.info("No new tracks found")
-    
+                
+            # If no common tracks are found, maintain the same state (don't delete tracks)
+            if common_tracks != set():
+                try:
+                    log.info(f"Adding tracks {[self.client.track(x)['name'] for x in new_tracks]}")
+                    if len(new_tracks) > 0:
+                        self.client.playlist_add_items(self.cache_id, new_tracks)   
+                    # Delete tracks no longer commonly played if more tracks than required
+                    extras = cache_track_ids - common_tracks
+                    tracks_to_remove = []
+                    if len(cache_track_ids) > self.minlen and len(extras) > 0:    
+                        while len(cache_track_ids - extras) > self.minlen:
+                            tracks_to_remove.append(extras.pop())
+                    log.info(f"Removing tracks {[self.client.track(i)['name'] for i in tracks_to_remove]}")
+                    self.client.playlist_remove_all_occurrences_of_items(self.cache_id, tracks_to_remove)
+                except SpotifyException as e:    
+                    log.error(f"{e}")
+            else:
+                log.info("No new tracks found")
+        
+            # Delete the client instance
+            self.client = None    
+            log.info("End monitor")
+
+        except Exception as e:
+            log.error(e)
+
     def start(self):
         while self.active:
             self.read_config()
