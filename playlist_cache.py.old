@@ -8,7 +8,7 @@ from auth import login
 from masterlib import _paged_results, generic_menu, log
 from scopes import ALL_PLAYLIST_MODIFY_SCOPES, ALL_PLAYLIST_READ_SCOPES, RECENTLY_PLAYED_SCOPE, TOP_READ_SCOPE
 
-REPEAT_REWIND_PLAYLIST_ID = "37i9dQZF1EpW0BOA2eRWaT"
+REPEAT_REWIND_PLAYLIST_ID = "##"
 
 INTERVAL = 60 * 60 * 1  # 1 hour
 CONFIG_FILE_NAME = "config.json"

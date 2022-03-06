@@ -70,7 +70,7 @@ def update_cache_config(parent_id, config="config.json", parent_name=None, cache
 def get_playlist_track_ids(sp, playlist_id):
     try:
         track_ids = [track['track']['id'] for track in _paged_results(sp, sp.playlist_items(playlist_id))]
-        log.info(f"Found {len(track_ids)} playlist tracks")
+        log.debug(f"Found {len(track_ids)} playlist tracks")
         return track_ids
     except SpotifyException as e:
         log.info(f"[ERROR {e}]")
@@ -80,21 +80,21 @@ def get_top_tracks(sp, long=False):
     try:
         short_term_top_track_obj = _paged_results(sp, sp.current_user_top_tracks(time_range='short_term'))
         short_top_tracks = set([track['id'] for track in short_term_top_track_obj])
-        log.info(f"Found {len(short_top_tracks)} short term top tracks")
+        log.debug(f"Found {len(short_top_tracks)} short term top tracks")
         log.debug(f"{set([track['name'] for track in short_term_top_track_obj])}")
         med_top_tracks_obj = _paged_results(sp, sp.current_user_top_tracks(time_range='medium_term'))
         med_top_tracks = set([track['id'] for track in med_top_tracks_obj])
-        log.info(f"Found {len(med_top_tracks)} medium term top tracks")
+        log.debug(f"Found {len(med_top_tracks)} medium term top tracks")
         log.debug(f"{set([track['name'] for track in med_top_tracks_obj])}")
         top_tracks_union = short_top_tracks.union(med_top_tracks)
         if long:
             log.debug("Retrieving long term top tracks...")
             long_term_top_tracks_obj = _paged_results(sp, sp.current_user_top_tracks(time_range='long_term'))
             long_top_tracks = set([track['id'] for track in long_term_top_tracks_obj])
-            log.info(f"Found {len(long_top_tracks)} long term top tracks")
+            log.debug(f"Found {len(long_top_tracks)} long term top tracks")
             log.debug(f"{set([track['name'] for track in long_term_top_tracks_obj])}")
             top_tracks_union = top_tracks_union.union(long_top_tracks)
-        log.info(f"Top tracks union contains {len(top_tracks_union)} tracks")
+        log.debug(f"Top tracks union contains {len(top_tracks_union)} tracks")
         return top_tracks_union
     except SpotifyException as e:
         log.error(f"{e}")
@@ -105,7 +105,7 @@ def get_recents(sp):
         recently_played = _paged_results(sp, sp.current_user_recently_played())
         recently_played_track_ids = set([x['track']['id'] for x in recently_played])
         recently_played_track_names = set([x['track']['name'] for x in recently_played])
-        log.info(f"Found {len(recently_played_track_ids)} recently played tracks")
+        log.debug(f"Found {len(recently_played_track_ids)} recently played tracks")
         log.debug(f"{recently_played_track_names}")
         return recently_played_track_ids
     except SpotifyException as e:
@@ -119,7 +119,7 @@ def fetch_user_common_tracks(sp, parent_id, config_file):
     common_tracks = top_tracks.union(recently_played)
     repeat_rewind_id = cnf.get("global_settings").get("repeat_rewind_playlist_id")
     if repeat_rewind_id:
-        log.info("Fetching repeat rewind track ids")
+        log.debug("Fetching repeat rewind track ids")
         repeat_rewind_track_ids = get_playlist_track_ids(sp, repeat_rewind_id)
         return common_tracks.union(repeat_rewind_track_ids)
     return common_tracks

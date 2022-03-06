@@ -14,7 +14,8 @@ from scopes import ALL_PLAYLIST_MODIFY_SCOPES, ALL_PLAYLIST_READ_SCOPES, RECENTL
 class PlaylistCache:
     def __init__(self, parent_id, spotipy_client=None, cache_id=None, config_file="config.json"):
         self.client = spotipy_client
-        log.basicConfig(filename=f"logs/{parent_id}_{datetime.now()}", level=log.INFO, format='[%(levelname)s] [%(asctime)s] %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p')
+        log.basicConfig(filename=f"logs/{parent_id}", level=log.INFO, format='[%(levelname)s] [%(asctime)s] %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p')
+        log.basicConfig(filename=f"logs/debug/{parent_id}", level=log.DEBUG, format='[%(levelname)s] [%(asctime)s] %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p')
         if not self.client:
             self.client = login(" ".join([ALL_PLAYLIST_MODIFY_SCOPES, ALL_PLAYLIST_READ_SCOPES, RECENTLY_PLAYED_SCOPE, TOP_READ_SCOPE]))
         if not self.client:
@@ -45,7 +46,7 @@ class PlaylistCache:
     
 
     def monitor(self):
-        log.info("Begin monitor")
+        log.debug("Begin monitor")
         # Re-authorize on every run
         try:
             if not self.client:
@@ -65,9 +66,9 @@ class PlaylistCache:
                 self.read_config()
             
         
-            log.info("Fetching parent track ids")
+            log.debug("Fetching parent track ids")
             parent_track_ids = set(get_playlist_track_ids(self.client, self.parent_id))
-            log.info("Fetching cache track ids")
+            log.debug("Fetching cache track ids")
             cache_track_ids = set(get_playlist_track_ids(self.client, self.cache_id))
 
             most_played_track_ids = fetch_user_common_tracks(self.client, self.parent_id, self.config_file)
@@ -86,19 +87,19 @@ class PlaylistCache:
                     extras = cache_track_ids - common_tracks
                     tracks_to_remove = []
                     if len(cache_track_ids) > self.minlen and len(extras) > 0:    
-                        while len(cache_track_ids - extras) > self.minlen:
+                        while len(cache_track_ids - extras) > self.minlen and len(extras) > 0:
                             tracks_to_remove.append(extras.pop())
                     log.info(f"Removing tracks {[self.client.track(i)['name'] for i in tracks_to_remove]}")
                     self.client.playlist_remove_all_occurrences_of_items(self.cache_id, tracks_to_remove)
                 except SpotifyException as e:    
                     log.error(f"{e}")
             else:
-                log.info("No new tracks found")
+                log.debug("No new tracks found")
         
             # Delete the client instance
             self.client = None    
-            log.info("End monitor")
-
+            log.debug"End monitor")
+        # TODO remove broad except 
         except Exception as e:
             log.error(e)
 
