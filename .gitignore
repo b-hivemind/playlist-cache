@@ -1,8 +1,0 @@
-auth_credentials.py
-BUILD_LOG
-config.json
-special_playlists_test.py
-__pycache__
-logs/*
-.cache
-playlist_cache.py.old
