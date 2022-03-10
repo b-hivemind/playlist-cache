@@ -15,7 +15,6 @@ class PlaylistCache:
     def __init__(self, parent_id, spotipy_client=None, cache_id=None, config_file="config.json"):
         self.client = spotipy_client
         log.basicConfig(filename=f"logs/{parent_id}", level=log.INFO, format='[%(levelname)s] [%(asctime)s] %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p')
-        log.basicConfig(filename=f"logs/debug/{parent_id}", level=log.DEBUG, format='[%(levelname)s] [%(asctime)s] %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p')
         if not self.client:
             self.client = login(" ".join([ALL_PLAYLIST_MODIFY_SCOPES, ALL_PLAYLIST_READ_SCOPES, RECENTLY_PLAYED_SCOPE, TOP_READ_SCOPE]))
         if not self.client:
@@ -74,7 +73,8 @@ class PlaylistCache:
             most_played_track_ids = fetch_user_common_tracks(self.client, self.parent_id, self.config_file)
             common_tracks = parent_track_ids.intersection(most_played_track_ids)
             new_tracks = common_tracks - cache_track_ids
-            log.info("Unique tracks {}".format(new_tracks))
+            if new_tracks:
+                log.info("Unique tracks {}".format(new_tracks))
         
                 
             # If no common tracks are found, maintain the same state (don't delete tracks)
@@ -98,7 +98,7 @@ class PlaylistCache:
         
             # Delete the client instance
             self.client = None    
-            log.debug"End monitor")
+            log.debug("End monitor")
         # TODO remove broad except 
         except Exception as e:
             log.error(e)
