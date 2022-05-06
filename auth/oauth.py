@@ -1,6 +1,6 @@
 import logging as log
 
-from auth_credentials import client_id, client_secret
+from auth.auth_credentials import client_id, client_secret
 
 import spotipy
 from spotipy.oauth2 import SpotifyOAuth

@@ -1,0 +1,2 @@
+docker build -t playlist_cache_stable .
+docker run -d --name "playlist_cache_${1}" playlist_cache_stable:latest

@@ -1,0 +1,5 @@
+.cache
+*.swp
+__pycache__/
+_ideation
+auth/auth_credentials.py
