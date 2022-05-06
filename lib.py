@@ -9,6 +9,9 @@ FIXTURES = {
     "long_term_top_tracks": False,
     "cache_minimum_size": 0
 }
+LONG_TERM_TOP_TRACKS = False
+CONFIG_NAME = "/config/config.json"
+CACHE_MINIMUM_SIZE = 0
 
 def _paged_results(sp, results):
     temp = results['items']
@@ -17,55 +20,36 @@ def _paged_results(sp, results):
         temp.extend(results['items'])
     return temp
 
-def create_cache_playlist(sp, parent_id, config="config.json"):  
+def create_cache_playlist(sp, parent_id):  
     try:
         parent_playlist = sp.playlist(parent_id)
         parent_playlist_name = parent_playlist.get("name")
         cache_playlist_name = parent_playlist_name + " cache"
         cache_playlist_description = FIXTURES["description"].format(parent_playlist_name)
         cache_playlist_id = sp.user_playlist_create(sp.me()['id'], name=cache_playlist_name, description=cache_playlist_description).get('id')
-        update_cache_config(parent_id, parent_name=parent_playlist_name, cache_id=cache_playlist_id, config=config)
+        update_cache_config(parent_id, cache_id=cache_playlist_id)
         log.info(f"Created playlist {cache_playlist_name} with id {cache_playlist_id}")
         return cache_playlist_id
     except SpotifyException as e:
         log.error(f"{e}")
         return None
 
-def read_config(config="config.json", sub="global_settings", parent_id=None, write=False):
+def read_config():
     json_config = {}
-    with open(config, 'r') as readfile:
+    with open(CONFIG_NAME, 'r') as readfile:
         json_config = json.load(readfile)
-    
-    if sub == "caches" and not parent_id:    
-        return json_config['caches']
-
-    sub_obj = json_config.get(sub)
-    if sub:
-        if sub == "caches":
-            sub_obj = sub_obj.get(parent_id)
-        if write:
-            return (json_config, sub_obj)
-        else:
-            return sub_obj
     return json_config
 
 
-def update_cache_config(parent_id, config="config.json", parent_name=None, cache_id=None, long=None, minlen=None, active=None, interval=None):
-    config_obj, old_config = read_config(config=config, sub="caches", parent_id=parent_id, write=True)
-    new_config = {}
-    if not old_config:
-        old_config = {}
-    
-    new_config["parent_name"] = parent_name or old_config.get("parent_name", "")
-    new_config["cache_id"] = cache_id or old_config.get("cache_id", "")
-    new_config["long_term_top_tracks"] = long if long is not None else old_config.get("long_term_top_tracks", FIXTURES["long_term_top_tracks"])
-    new_config["cache_minimum_size"] = minlen or old_config.get("cache_minimum_size", FIXTURES["cache_minimum_size"])
-    new_config["active"] = active if active is not None else old_config.get("active", True)
-    new_config["interval"] = interval or old_config.get("interval", 3600)
+def update_cache_config(parent_id, cache_id=None, long=None, minlen=None, active=None, interval=None):
+    config = read_config()
+       
+    config.update({"cache_id" : (cache_id or config.get("cache_id", ""))})
+    config.update({"long_term_top_tracks" : (long if long is not None else config.get("long_term_top_tracks", LONG_TERM_TOP_TRACKS))})
+    config.update({"active" : (active if active is not None else config.get("active", True))})
 
-    config_obj['caches'].update({parent_id: new_config})
-    with open(config, 'w') as outfile:
-        json.dump(config_obj, outfile, indent="\t")
+    with open(CONFIG_NAME, 'w') as outfile:
+        json.dump(config, outfile, indent="\t")
 
 def get_playlist_track_ids(sp, playlist_id):
     try:
@@ -112,12 +96,12 @@ def get_recents(sp):
         log.error(f"{e}")
     return set()
 
-def fetch_user_common_tracks(sp, parent_id, config_file):
-    cnf, cache_cnf = read_config(config=config_file, sub="caches", parent_id=parent_id, write=True) 
+def fetch_user_common_tracks(sp, parent_id):
+    cache_cnf = read_config() 
     top_tracks = get_top_tracks(sp, long=cache_cnf.get("long_term_top_tracks", False))
     recently_played = get_recents(sp)
     common_tracks = top_tracks.union(recently_played)
-    repeat_rewind_id = cnf.get("global_settings").get("repeat_rewind_playlist_id")
+    repeat_rewind_id = cache_cnf.get("repeat_rewind_playlist_id")
     if repeat_rewind_id:
         log.debug("Fetching repeat rewind track ids")
         repeat_rewind_track_ids = get_playlist_track_ids(sp, repeat_rewind_id)
