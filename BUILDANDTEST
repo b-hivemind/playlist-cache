@@ -1,3 +1,3 @@
 docker build -t playlist_cache_testing .
-docker run --name playlist_cache_testing playlist_cache_testing:latest 
+docker run -d --name playlist_cache_testing playlist_cache_testing:latest 
 docker rm playlist_cache_testing
