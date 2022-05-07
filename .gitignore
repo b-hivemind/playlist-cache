@@ -1,4 +1,5 @@
 .cache
+config.json
 *.swp
 __pycache__/
 _ideation

@@ -60,12 +60,16 @@ class PlaylistCache:
             
         
         log.debug("Fetching parent track ids")
-        parent_track_ids = set(get_playlist_track_ids(self.client, self.parent_id))
+        source_track_ids = set(get_playlist_track_ids(self.client, self.parent_id))
+        
+        for playlist_id in self.config.get("alt_sources", []):
+            source_track_ids = source_track_ids.union(get_playlist_track_ids(self.client, playlist_id))
+
         log.debug("Fetching cache track ids")
         cache_track_ids = set(get_playlist_track_ids(self.client, self.cache_id))
 
         most_played_track_ids = fetch_user_common_tracks(self.client, self.parent_id)
-        common_tracks = parent_track_ids.intersection(most_played_track_ids)
+        common_tracks = source_track_ids.intersection(most_played_track_ids)
         new_tracks = common_tracks - cache_track_ids
         if new_tracks:
             log.info("Unique tracks {}".format(new_tracks))
